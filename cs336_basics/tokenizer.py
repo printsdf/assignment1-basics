@@ -14,6 +14,7 @@ class Tokenizer:
         self.special_tokens = special_tokens
         self.reverse_vocab = {v: k for k, v in vocab.items()}
 
+
     def _apply_merge(self, word: tuple[bytes], a: bytes, b: bytes):
         new_word = []
         i = 0
@@ -25,6 +26,7 @@ class Tokenizer:
                 new_word.append(word[i])
                 i += 1
         return tuple(new_word)
+
 
     def _encode_chunk(self, text: str) -> list[int]:
         ids = []
@@ -39,22 +41,24 @@ class Tokenizer:
         
         return ids
 
+
     @classmethod
     def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
         with open(vocab_filepath) as f:
             raw = json.load(f)
-            vocab = {id: token_str.encode('utf-8') for token_str, id in raw.items()}
+            vocab = {id: bytes([ord(c) for c in token_str]) for token_str, id in raw.items()}
         
         merges = []
         with open(merges_filepath) as f:
             for line in f:
                 parts = line.rstrip().split(" ")
                 if len(parts) == 2:
-                    token1 = parts[0].encode('utf-8')
-                    token2 = parts[1].encode('utf-8')
+                    token1 = bytes([ord(c) for c in parts[0]])
+                    token2 = bytes([ord(c) for c in parts[1]])
                     merges.append((token1, token2))
             
         return cls(vocab, merges, special_tokens)
+
 
     def encode(self, text: str) -> list[int]:
         ids = []
@@ -73,10 +77,12 @@ class Tokenizer:
         
         return ids
 
+
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
         for line in iterable:
             for id in self.encode(line):
                 yield id
+
 
     def decode(self, ids: list[int]) -> str:
         word_bytes = b''.join(self.vocab[i] for i in ids)
